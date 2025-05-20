@@ -37,10 +37,28 @@ const helloRoute = createRoute({
 
 app.openapi(helloRoute, (c) => {
   if (Math.random() > 0.5) {
+    /**
+       const badRequest: {
+        error: "BadRequest_400";
+        statusCode: "400";
+        }
+     */
+    const badRequest = errorToHTTPException(c, "BadRequest_400");
+
+    /**
+     * const internalServerError: {
+        error: "InternalServerError_500";
+        statusCode: "500";
+      }
+     */
+    // const internalServerError = errorToHTTPException(c, "InternalServerError_500");
+
     // this throws type error (example)
     return c.json({ message: "Not implemented" }, 501);
     // want this same behavior when we use, if the error code is not defined in the openapi response schema then it should throw a type error
-    // return errorToHTTPException(c, userWithProject.val)
+    return errorToHTTPException(c, "InternalServerError_500");
+
+    return errorToHTTPException(c, "NotImplemented_501");
   }
 
   return c.json({ message: "Hello from Hono + OpenAPI!" }, 200);

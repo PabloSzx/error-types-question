@@ -14,14 +14,45 @@ export const ErrorSchema = zpp(
     .openapi("Error")
 );
 
-/* _____________ Your Code Here _____________ */
+const ErrorCodes = {
+  BadRequest: {
+    code: 400,
+    message: "Bad request",
+    status: 400,
+  },
+  InternalServerError: {
+    code: 500,
+    message: "Internal server error",
+    status: 500,
+  },
+  // NotImplemented: {
+  //   code: 501,
+  //   message: "Not implemented",
+  // },
+} as const satisfies Record<
+  string,
+  {
+    code: number;
+    status: number;
+    message: string;
+  }
+>;
 
-// Implement the Error Definitions and create errors like shown in the readme
+type ErrorCodesNames = keyof typeof ErrorCodes;
+
+type ErrorCodesTypes = {
+  [K in ErrorCodesNames]: `${K}_${(typeof ErrorCodes)[K]["code"]}`;
+};
+
+type ErrorCodesTypeValues = ErrorCodesTypes[keyof ErrorCodesTypes];
+
+type ErrorCodeStatus<T extends ErrorCodesTypeValues> =
+  T extends `${infer _}_${infer C}` ? C : never;
 
 // Implement the errorToHTTPException function.
 export const errorToHTTPException = <
-  T,
-  C // Ensure the passed code C is valid for the error type T
+  T extends ErrorCodesTypeValues,
+  C extends ErrorCodeStatus<T>
 >(
   c: Context,
   error: T
@@ -29,18 +60,33 @@ export const errorToHTTPException = <
   error: T;
   statusCode: C;
 } => {
-  //   Hono's c.json expects the status code as the second argument.
-  //   The 'code' variable (type C) now correctly represents the specific HTTP status passed.
+  const errorCodeNameString = error.split("_")[0];
 
-  //   console.log("errorToHTTPException", error.statusCode);
-  return c.json(
-    ErrorSchema.new({
-      error: {
-        message: error.message,
-        code: error.code, // This remains the internal Composio error code
-        status: error.statusCode as C, // This is the specific HTTP status code passed (e.g., 400 or 500)
+  if (errorCodeNameString in ErrorCodes) {
+    const errorCodeName = errorCodeNameString as ErrorCodesNames;
+
+    const errorCode = ErrorCodes[errorCodeName];
+
+    return c.json(
+      {
+        error: {
+          message: errorCode.message,
+          code: errorCode.code,
+          status: errorCode.status,
+        },
       },
-    }),
-    error.statusCode as C
-  ); // Pass the specific HTTP status code C here
+      errorCode.status
+    );
+  } else {
+    return c.json(
+      {
+        error: {
+          message: "Internal Server Error",
+          code: ErrorCodes.InternalServerError.code,
+          status: ErrorCodes.InternalServerError.status,
+        },
+      },
+      ErrorCodes.InternalServerError.code
+    );
+  }
 };
