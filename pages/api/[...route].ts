@@ -43,7 +43,7 @@ app.openapi(helloRoute, (c) => {
         statusCode: "400";
         }
      */
-    const badRequest = errorToHTTPException(c, "BadRequest_400");
+    // const badRequest = errorToHTTPException(c, "BadRequest_400");
 
     /**
      * const internalServerError: {
